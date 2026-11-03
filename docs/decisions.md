@@ -36,3 +36,51 @@ nonnegative prices, and positive quantities at the database boundary.
 PostgreSQL integration tests use disposable schemas. They exercise the real engine
 while leaving development tables intact. `docs/` remains the project reference;
 `kb/` will hold the separately retrievable company articles with source IDs.
+
+## 2026-11-03 — Local BGE retrieval over complete short articles
+
+The owner selected `BAAI/bge-small-en-v1.5` to avoid paid embedding API calls.
+Sentence Transformers loads a pinned model revision on CPU with remote code disabled.
+Document embeddings are normalized; queries use the same model and BGE's recommended
+query instruction. The index records the model revision and encoding convention so
+search never compares vectors from a different configuration.
+
+The 22 source-ID sections of the knowledge pack are copied into individual `kb/`
+files, retaining their policy text and marking internal guidance. Each short article
+is one chunk. This avoids splitting tables and detaching exceptions from rules.
+The model tokenizer rejects content beyond its actual limit instead of silently
+dropping text. Longer future articles will need a token-aware chunker and multiple
+chunk IDs per source; no generic splitter is needed for the current corpus.
+
+A new migration enables pgvector and adds `kb_chunks` with 384-dimensional vectors,
+passage text, audience, model identity, and a SHA-256 content version. The Compose
+image changes to `pgvector/pgvector:pg16`, preserving the PostgreSQL major version
+and existing volume. Exact cosine search is sufficient for 22 passages; approximate
+indexes and keyword/hybrid ranking are deferred. Similarity is a ranking signal,
+not an answerability threshold or calibrated confidence.
+
+Reindexing replaces only derived KB rows atomically after all embeddings succeed.
+It removes stale passages and preserves the working index on failure. Historical
+index snapshots are not retained; later traces must preserve the evidence used.
+Internal results remain available to the support workflow but must not be exposed
+directly as customer answers. No chat LLM or generation step is part of this slice.
+
+References: [BGE model card](https://huggingface.co/BAAI/bge-small-en-v1.5),
+[Sentence Transformers](https://sbert.net/docs/package_reference/sentence_transformer/model.html),
+and [pgvector](https://github.com/pgvector/pgvector).
+
+## 2026-11-03 — Environment-configured embedding model
+
+The owner requested changing models through `.env` rather than Python constants.
+Model name and revision are now required environment settings; query and document
+prefixes are configurable too, since retrieval models can require different input
+instructions. `.env.example` supplies the BGE configuration. The generic `Embedder`
+loads these values once per process. Its index identity includes the model, revision,
+both prefixes, and normalization convention; any change requires restarting and
+rebuilding the index. A dimension check rejects models incompatible with the current
+384-dimensional schema before database writes. Dimension changes remain explicit
+migrations rather than automatic destructive schema changes.
+
+Automatic KB watching was discussed as a possible next slice, not implemented.
+The explicit index command already includes new files and removes deleted ones
+when rerun, while preserving the working index if validation or embedding fails.

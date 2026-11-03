@@ -2,7 +2,45 @@
 
 This is the handoff for continuing the project. Read it alongside `AGENTS.md` and the three Trailhaven source documents in `docs/`. Git history records individual edits; this log preserves the context needed to make the next change.
 
-## 2026-11-03 16:23:02 IST (+05:30) — Schema slice approved; user directs subsequent steps
+## 2026-11-03 17:16:09 IST (+05:30) — Local environment aligned with template
+
+The owner added a Gemini key to `.env` and requested that local runs use it without inspecting the secret. `.env.example` now documents an empty `GEMINI_API_KEY` placeholder and `GEMINI_MODEL=gemini-3.8-flash` alongside the database and embedding settings. Missing embedding settings and `GEMINI_MODEL` were appended to the existing `.env`; all existing values, including the key, were preserved. Only variable names were checked, and no secret values were displayed or inspected. Git confirms `.env` is ignored. Future commands must load `.env`, not use `.env.example` as runtime configuration.
+
+Verification checked that every template variable name exists locally and that the diff has no whitespace errors. Gemini was not called, so API-key validity, account model access, and quota remain unverified. The Gemini gateway is still unimplemented. The owner subsequently authorized committing the reviewed RAG/configuration changes and proceeding to evidence-based draft generation and testing. That next slice must remain uncommitted until reviewed.
+
+## 2026-11-03 17:07:56 IST (+05:30) — Earlier checkpoint: embedding configuration moved to environment
+
+The owner requested model changes without editing Python. `.env.example` now holds `EMBEDDING_MODEL`, `EMBEDDING_REVISION`, and query/document prefixes. Existing private `.env` files were not created or overwritten; copy these entries when configuring a local environment. `Embedder` replaces the BGE-specific class name and reads configuration at initialization. Model identity stored with each vector includes all embedding settings, preventing cross-configuration comparisons. Models must work with Sentence Transformers and produce 384 dimensions; other sizes fail before indexing and require a deliberate schema migration.
+
+The 22-article development index was rebuilt with the new configuration identity. The full suite passed 15 tests using the environment-configured BGE model and PostgreSQL, including new checks for missing configuration, changed revision/prefix identity, configured model loading, query/document prefixes, and incompatible dimensions. Default offline tests passed 10 and skipped 5 database/model checks. README and AGENTS commands now load embedding settings from the env file. See [decisions](docs/decisions.md).
+
+Automatic indexing on KB file changes was discussed but is not implemented or required to run retrieval. The owner can propose that as the next slice; a local watcher could invoke the existing atomic rebuild on additions, edits, and deletions. Current chunking remains one short article per chunk, with oversized input rejected. Both this configuration change and the earlier RAG implementation remain uncommitted pending review.
+
+## 2026-11-03 16:33:21 IST (+05:30) — Earlier checkpoint: BGE/pgvector retrieval working
+
+The owner selected BGE and authorized the KB/retrieval slice. This slice remains uncommitted; no permission to commit it has been given. The previous business-schema slice is committed as `6b90e77`.
+
+### Current retrieval flow
+
+The 22 source-ID sections of the company knowledge pack now live as individual articles in `kb/`. Each has a title and public/internal audience marker. Original policy text is retained; company profile and canned macros without source IDs remain in the reference pack and are not indexed. Project specs and planning docs are excluded from retrieval.
+
+Each current article is one chunk. `app/retrieval/documents.py` loads and validates these files, deriving the source ID from the filename and a content-hash version from the file. `embeddings.py` runs pinned `BAAI/bge-small-en-v1.5` locally on CPU. It rejects text over the model token limit, normalizes embeddings, and adds BGE's retrieval instruction only to questions. An embedding is the resulting vector of 384 numbers; pgvector stores and compares it, not creates it.
+
+Compose now uses the pgvector-enabled PostgreSQL 16 image with the existing data volume. Migration `002_knowledge.sql` enables the extension in `public` and creates `kb_chunks`. The index command computes all vectors before replacing derived KB rows in a transaction. Search returns source ID, title, text, version, audience, and cosine similarity for the top passages, restricted to the pinned embedding configuration. See [decisions](docs/decisions.md) for trade-offs.
+
+### Verification and local state
+
+Dependencies and the pinned model were downloaded; weights are cached outside Git. The database is running and all 22 passages are indexed. The real search CLI returned `KB-CARE-001` first for washing a down sleeping bag.
+
+All 13 tests passed with `TEST_DATABASE_URL` and `RUN_BGE_TESTS=1`, including actual model/pgvector retrieval for care, discount, and shipping queries. Coverage includes rejected oversized input, document version changes, invalid KB/search inputs, vector ranking, model mismatch exclusion, stale-row removal, and preserving the old index when a rebuild fails. PostgreSQL tests use disposable schemas; the shared fixture moved to `tests/conftest.py`. Default offline tests passed 8 and explicitly skipped 5 database/model cases.
+
+### Limits and continuation
+
+This implements retrieval, not generated answers or a working support agent. Internal policies are intentionally available to the future agent; do not expose this CLI's raw results directly to customers. Similarity scores are not calibrated confidence. Search is vector-only: keyword/hybrid ranking, unknown-topic rejection, and wider retrieval evals are still pending. Longer articles will require multiple token-aware chunks; the current approach rejects them safely. Reindexing retains only the active snapshot, so later traces must preserve their cited evidence.
+
+Wait for owner review and the next proposed slice. Possible continuations are improving retrieval coverage, implementing the model gateway and a grounded draft, or returning to identity-safe order lookup. No chat LLM/provider has been selected or integrated.
+
+## 2026-11-03 16:23:02 IST (+05:30) — Earlier checkpoint: schema slice approved
 
 The PostgreSQL foundation was committed as `58de11b`. The owner reviewed the schema and seed slice below and explicitly authorized its commit. The ongoing agreement is that the user proposes each next step; validate it, explain corrections, and implement only the agreed small slice. This is recorded in `AGENTS.md`. No further implementation slice is authorized yet.
 

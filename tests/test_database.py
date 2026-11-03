@@ -1,34 +1,12 @@
 """Integration tests use a disposable schema, never the development tables."""
 
-import os
 from decimal import Decimal
-from uuid import uuid4
 
 import psycopg
-from psycopg import sql
 import pytest
 
 from app.db.migrate import migrate
 from app.mock.seed import seed
-
-
-@pytest.fixture
-def database():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("Set TEST_DATABASE_URL to run PostgreSQL integration tests")
-    schema = "test_" + uuid4().hex
-    with psycopg.connect(url, autocommit=True, connect_timeout=5) as connection:
-        connection.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
-        try:
-            connection.execute(
-                sql.SQL("SET search_path TO {}").format(sql.Identifier(schema))
-            )
-            yield connection
-        finally:
-            connection.execute(
-                sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema))
-            )
 
 
 def test_migrate_and_seed_are_repeatable(database):
@@ -37,7 +15,7 @@ def test_migrate_and_seed_are_repeatable(database):
     database.execute("UPDATE customers SET name = 'Reviewed name' WHERE id = 'C-001'")
     migrate(database)
     seed(database)
-    assert database.execute("SELECT count(*) FROM schema_migrations").fetchone() == (1,)
+    assert database.execute("SELECT count(*) FROM schema_migrations").fetchone() == (2,)
     assert database.execute("SELECT count(*) FROM customers").fetchone() == (6,)
     assert database.execute("SELECT count(*) FROM orders").fetchone() == (8,)
     assert database.execute("SELECT count(*) FROM order_items").fetchone() == (9,)
