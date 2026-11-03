@@ -14,6 +14,7 @@ Read root `buildlog.md` before starting work for the implementation state, open 
 
 ## Small steps for learning
 
+- The user proposes the next step. Validate it, explain any corrections, and implement only the agreed small slice. Suggestions are not authorization to start the next slice.
 - Use the ponytail skill strictly: make the smallest complete change, reuse existing code, and avoid speculative abstractions or dependencies.
 - Read affected code and callers before editing. Update affected tests, fixtures, and configuration together.
 - Keep functions focused and readable. Split by responsibility, not an arbitrary line count.
@@ -46,6 +47,10 @@ Setup: `cp .env.example .env`, `uv sync --locked`, then `docker compose up -d --
 Unit tests: `uv run pytest` (offline after dependency installation; no database required).
 
 Database smoke check: `uv run --env-file .env python -m app.db.check` (requires PostgreSQL). See `README.md` for local credentials and volume behavior.
+
+Apply schema: `uv run --env-file .env python -m app.db.migrate`. Load fictional development data: `uv run --env-file .env python -m app.mock.seed`. Never edit applied migrations; add a new numbered SQL file. Run only one migration process at a time.
+
+Integration tests: set `TEST_DATABASE_URL` to a local PostgreSQL database, then run `uv run pytest`. Tests use disposable schemas; without that variable the database tests are skipped, not passed.
 
 - New non-trivial logic needs a focused test or assert-based self-check; trivial documentation changes need no runtime tests.
 - Unit tests must run offline without API keys, paid calls, or live business systems.

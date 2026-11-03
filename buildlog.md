@@ -2,7 +2,27 @@
 
 This is the handoff for continuing the project. Read it alongside `AGENTS.md` and the three Trailhaven source documents in `docs/`. Git history records individual edits; this log preserves the context needed to make the next change.
 
-## 2026-11-03 16:09:46 IST (+05:30) — PostgreSQL foundation verified; awaiting code review
+## 2026-11-03 16:23:02 IST (+05:30) — Schema slice approved; user directs subsequent steps
+
+The PostgreSQL foundation was committed as `58de11b`. The owner reviewed the schema and seed slice below and explicitly authorized its commit. The ongoing agreement is that the user proposes each next step; validate it, explain corrections, and implement only the agreed small slice. This is recorded in `AGENTS.md`. No further implementation slice is authorized yet.
+
+### Current capability and evidence
+
+The local PostgreSQL container is healthy. `app/db/migrate.py` applied the first numbered SQL migration, creating `customers`, `orders`, and `order_items`, plus a migration ledger. `app/mock/seed.py` loaded the six documented customers, eight orders, and nine items. Seed runs preserve existing rows. Unknown dates remain NULL; Morgan's two prior delivery claims are retained in customer flags. See [decisions](docs/decisions.md) for schema/seed separation and runner limitations.
+
+All six tests passed with `TEST_DATABASE_URL` set, including real PostgreSQL tests in disposable schemas. They verified rerunning migration/seed without duplicates or overwritten edits, the joined `TH-10482` backpack at $179, foreign-key and quantity/price constraints, and rollback of customer inserts when order seeding fails. The actual migration and seed CLIs also completed successfully against the development database. Test schemas were removed by fixture cleanup.
+
+The earlier connectivity-only checkpoint below is historical. Setup, migration, seed, and test commands are in `README.md` and `AGENTS.md`. Unit-only runs skip integration tests unless `TEST_DATABASE_URL` is supplied.
+
+### Boundaries and next step
+
+No customer-facing API or model-accessible order lookup exists yet. Database tests read tables directly; identity verification and authorized tool outputs must be designed before exposing order data to a model. Extra fixtures to reach about 50 orders, remaining PRD tables, and agent behavior are deferred.
+
+`docs/` holds the original project references; `kb/` is the separate location for source-ID-based company articles and is still empty. Populate it in the retrieval slice rather than indexing project planning docs as customer knowledge.
+
+A suggested next slice is the typed, read-only order lookup and its identity boundary; wait for the user's proposal/agreement before implementing it. For retrieval, the intended layout is article files in `kb/` and chunk text, source metadata, and embeddings in PostgreSQL with pgvector. Chunking can be deterministic; an embedding model generates vectors, not pgvector. No embedding model/provider has been selected, pgvector is not installed, and no LLM integration exists. Resolve the existing eval/policy ambiguities when their behavior is implemented. The migration runner is single-operator and forward-only; do not edit an applied SQL file or run concurrent migrations.
+
+## 2026-11-03 16:09:46 IST (+05:30) — Earlier checkpoint: PostgreSQL foundation verified
 
 The owner selected PostgreSQL and reviewed this foundation, then authorized its commit and the next implementation step. Future steps still wait for an explicit instruction before committing; `AGENTS.md` reflects that agreement.
 
