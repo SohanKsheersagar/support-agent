@@ -17,7 +17,8 @@ Surface contradictions before implementing the affected behavior; do not silentl
 - Keep functions focused and readable. Split by responsibility, not an arbitrary line count.
 - Explain what changed and why, run the relevant checks, inspect the diff, and commit one coherent step.
 - Stop after that step so the user can review and understand it before proceeding.
-- Record implementation trade-offs in `docs/decisions.md` when making them.
+- Record implementation trade-offs and their rationale in `docs/decisions.md` when making them; routine changes do not need a decision entry.
+- Append every change to root `buildlog.md` in the same commit, with the actual timestamp and timezone, what changed, and verification results. Use the real clock, not the mock fixture date. Link to decision entries when relevant instead of repeating their rationale.
 
 ## Implementation direction
 
