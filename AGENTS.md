@@ -10,6 +10,8 @@ Read these before changing the behavior they describe:
 
 Surface contradictions before implementing the affected behavior; do not silently change policy to make an eval pass.
 
+Read root `buildlog.md` before starting work for the implementation state, open questions, and next step.
+
 ## Small steps for learning
 
 - Use the ponytail skill strictly: make the smallest complete change, reuse existing code, and avoid speculative abstractions or dependencies.
@@ -18,7 +20,7 @@ Surface contradictions before implementing the affected behavior; do not silentl
 - Explain what changed and why, run the relevant checks, inspect the diff, and commit one coherent step.
 - Stop after that step so the user can review and understand it before proceeding.
 - Record implementation trade-offs and their rationale in `docs/decisions.md` when making them; routine changes do not need a decision entry.
-- Append every change to root `buildlog.md` in the same commit, with the actual timestamp and timezone, what changed, and verification results. Use the real clock, not the mock fixture date. Link to decision entries when relevant instead of repeating their rationale.
+- Maintain root `buildlog.md` as a handoff: current capabilities, decisions and reasoning, verification evidence, unresolved issues, and a concrete next step. Update it when those change, using the actual timestamp and timezone. Consolidate routine setup work; do not transcribe prompts or list every file edit. Keep durable design rationale in `docs/decisions.md` and link to it when that file exists.
 
 ## Implementation direction
 
