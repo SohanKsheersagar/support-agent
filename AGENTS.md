@@ -17,14 +17,14 @@ Read root `buildlog.md` before starting work for the implementation state, open 
 - Use the ponytail skill strictly: make the smallest complete change, reuse existing code, and avoid speculative abstractions or dependencies.
 - Read affected code and callers before editing. Update affected tests, fixtures, and configuration together.
 - Keep functions focused and readable. Split by responsibility, not an arbitrary line count.
-- Explain what changed and why, run the relevant checks, inspect the diff, and commit one coherent step.
+- Explain what changed and why, run the relevant checks, and inspect the diff. Leave changes uncommitted for review; commit only when the user explicitly asks.
 - Stop after that step so the user can review and understand it before proceeding.
 - Record implementation trade-offs and their rationale in `docs/decisions.md` when making them; routine changes do not need a decision entry.
 - Maintain root `buildlog.md` as a handoff: current capabilities, decisions and reasoning, verification evidence, unresolved issues, and a concrete next step. Update it when those change, using the actual timestamp and timezone. Consolidate routine setup work; do not transcribe prompts or list every file edit. Keep durable design rationale in `docs/decisions.md` and link to it when that file exists.
 
 ## Implementation direction
 
-- Python, FastAPI, Pydantic, and a plain Python orchestrator as described in the PRD. SQLite is allowed for the local MVP.
+- Python, FastAPI, Pydantic, and a plain Python orchestrator as described in the PRD. Use PostgreSQL, not SQLite; see `docs/decisions.md`.
 - Start with offline mock systems and a working CLI; build the review UI after the pipeline and evals work.
 - All LLM calls go through `app/gateway`, including classification, drafting, and model-based checks.
 - Use the fixed mock date `2026-11-02` for fixtures and repeatable tests; do not substitute the machine's current date.
@@ -41,7 +41,11 @@ Read root `buildlog.md` before starting work for the implementation state, open 
 
 ## Verification
 
-There is no application or test runner yet. Add the exact setup and test commands here when the first executable code is introduced.
+Setup: `cp .env.example .env`, `uv sync --locked`, then `docker compose up -d --wait db` (requires a running Docker engine). Do not overwrite an existing `.env`.
+
+Unit tests: `uv run pytest` (offline after dependency installation; no database required).
+
+Database smoke check: `uv run --env-file .env python -m app.db.check` (requires PostgreSQL). See `README.md` for local credentials and volume behavior.
 
 - New non-trivial logic needs a focused test or assert-based self-check; trivial documentation changes need no runtime tests.
 - Unit tests must run offline without API keys, paid calls, or live business systems.

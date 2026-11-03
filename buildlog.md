@@ -2,7 +2,28 @@
 
 This is the handoff for continuing the project. Read it alongside `AGENTS.md` and the three Trailhaven source documents in `docs/`. Git history records individual edits; this log preserves the context needed to make the next change.
 
-## 2026-11-03 15:59:27 IST (+05:30) — Foundation ready; implementation not started
+## 2026-11-03 16:09:46 IST (+05:30) — PostgreSQL foundation verified; awaiting code review
+
+The owner selected PostgreSQL and reviewed this foundation, then authorized its commit and the next implementation step. Future steps still wait for an explicit instruction before committing; `AGENTS.md` reflects that agreement.
+
+### Working implementation
+
+The project now has Python 3.12 configuration, uv dependency locking, a PostgreSQL 16 Compose service with persistent storage, and `app/db/check.py`, a read-only connectivity check. Only Psycopg and pytest are installed; API and model dependencies are deferred until needed. [Decisions](docs/decisions.md) explains PostgreSQL, local port 5433, and using Psycopg directly.
+
+`README.md` contains setup and verification commands. `.env.example` holds deliberately public local credentials, not production secrets. `.env` is ignored by Git. Verification used the example file explicitly; no private `.env` was created. Docker Desktop was started and the database is running, bound to `127.0.0.1:5433`.
+
+### Evidence and limits
+
+- Compose configuration validated and `docker compose --env-file .env.example up -d --wait db` reported a healthy database.
+- `uv run --env-file .env.example python -m app.db.check` returned `PostgreSQL connection OK`, exercising Python-to-PostgreSQL connectivity.
+- All three unit tests passed: missing configuration, connection cleanup, and propagation of database failure. These use mocks; the separate smoke check verifies the actual database connection.
+- No application tables, mock orders, migrations, API, or agent behavior exist yet. Connection success does not establish any harness safety or eval target.
+
+### Continue from here
+
+The next implementation slice is a versioned schema for customers, orders, and order items, a deterministic mock seed, and a lookup test for `TH-10482`. Use PostgreSQL for integration tests, keep tests isolated from persistent development data, and explain how schema migrations differ from seed data before adding them. The policy and eval questions below remain open.
+
+## 2026-11-03 15:59:27 IST (+05:30) — Earlier checkpoint: implementation not started
 
 ### Goal and working agreement
 
@@ -33,6 +54,6 @@ Resolve these before implementing the affected behavior:
 - Decide how examples are checked before reuse and excluded when stale or private. Storing an approved reply alone does not make it suitable memory for another customer.
 - The initial eval set has 32 cases; the project requires at least 40 before completion. Add meaningful regression cases from discovered gaps and failures.
 
-### Next small step
+### Next small step at that checkpoint (superseded above)
 
 Propose a minimal Python setup and one offline mock order lookup for `TH-10482`, with a focused test for the expected backpack and price. Choose and explain the storage approach before implementing it; SQLite is permitted by the spec but has not been selected. Add exact setup and test commands to `AGENTS.md` when executable code exists. Leave the remaining tables, model calls, and UI for later reviewable steps.
