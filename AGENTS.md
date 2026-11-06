@@ -44,7 +44,7 @@ Read root `buildlog.md` before starting work for the implementation state, open 
 
 Setup: `cp .env.example .env`, `uv sync --locked`, then `docker compose up -d --wait db` (requires a running Docker engine). Do not overwrite an existing `.env`.
 
-Use `.env` for local execution; `.env.example` is a committed template, not a runtime configuration file. Keep the template current, append only missing settings to existing `.env` files, and never display or inspect secret values. Gemini configuration uses `GEMINI_API_KEY` and `GEMINI_MODEL`; the generation integration is not implemented yet.
+Use `.env` for local execution; `.env.example` is a committed template, not a runtime configuration file. Keep the template current, append only missing settings to existing `.env` files, and never display or inspect secret values. Gemini configuration uses `GEMINI_API_KEY` and `GEMINI_MODEL`; let the SDK use credentials without inspecting or displaying them.
 
 Unit tests: `uv run pytest` (offline after dependency installation; no database required).
 
@@ -57,6 +57,8 @@ Integration tests: set `TEST_DATABASE_URL` to a local PostgreSQL database, then 
 KB indexing: `uv run --env-file .env python -m app.retrieval.index`. Search: `uv run --env-file .env python -m app.retrieval.search "question"`. Use only `kb/` articles, not project specs. Model name, revision, and query/document prefixes belong in `.env` (`.env.example` documents the settings), not Python constants. Both documents and queries use that configuration; changes require a restart and full reindex. The schema currently requires 384 dimensions. Internal passages are agent context, not customer-visible answers.
 
 Real-model retrieval tests: set both `TEST_DATABASE_URL` and `RUN_BGE_TESTS=1`, then run `uv run --env-file .env pytest`. This explicitly permits a first-use model download; default tests never load the embedding model. PostgreSQL must have pgvector available (the Compose image provides it).
+
+Policy draft CLI: `uv run --env-file .env python -m app.orchestrator.rag "fictional policy question"`. Live smoke evals: `uv run --env-file .env python -m evals.run_rag`. These call Gemini; use only synthetic questions while PII handling and full ticket guardrails remain unimplemented. Default unit tests simulate Gemini. Inspect saved live reports; provider errors are not answer-quality passes.
 
 - New non-trivial logic needs a focused test or assert-based self-check; trivial documentation changes need no runtime tests.
 - Unit tests must run offline without API keys, paid calls, or live business systems.

@@ -2,7 +2,31 @@
 
 This is the handoff for continuing the project. Read it alongside `AGENTS.md` and the three Trailhaven source documents in `docs/`. Git history records individual edits; this log preserves the context needed to make the next change.
 
-## 2026-11-03 17:16:09 IST (+05:30) — Local environment aligned with template
+## 2026-11-06 12:09:24 IST (+05:30) — Generation slice approved for commit and push
+
+The owner approved committing and pushing the generation slice described below to `main`. Before publishing, the offline suite passed 21 tests, with five opt-in database/model tests skipped; whitespace checks passed. `.env` remains ignored and excluded. The previous live 0/4 report is retained as failure evidence; no new Gemini requests were made. The next useful step remains a successful live RAG run and human inspection of answers, not additional agent features. Commit/push approval does not authorize a new implementation slice.
+
+## 2026-11-03 17:34:13 IST (+05:30) — Earlier checkpoint: draft generation implemented
+
+The owner authorized committing the reviewed RAG/configuration work, now `d7874c4`, and adding an answering mechanism before testing the full RAG flow. “200” was clarified as a typo, not 200 test cases. The new generation slice is uncommitted for review.
+
+### Implemented behavior
+
+`app/gateway/gemini.py` uses the official SDK with `.env` credentials, validated structured JSON, per-request timeout and output-token bounds, and no automatic retries. Provider error details are suppressed; only status codes are surfaced. `app/orchestrator/rag.py` retrieves up to five passages, excludes internal guidance, asks Gemini for a policy-only draft or abstention, validates citation IDs and exact quotes, rejects forbidden promises, and uses a second call to check grounding and citation support. Results are either `human_review` or `escalate_to_human` with no rejected draft. There are no send/action tools or persisted human tickets.
+
+### Evidence and unresolved issue
+
+The 25-test regression run passed with PostgreSQL/BGE enabled, including offline simulated Gemini cases for grounding rejection, unavailable evidence, invented citations, forbidden promises, malformed output, and provider errors. A further offline test verifies that service failures never count as correct abstention in eval reports. The final offline run passed 21 tests and skipped the five opt-in database/model cases; whitespace checks passed.
+
+The four live synthetic cases in `evals/rag_cases.json` ran through retrieval and Gemini. All four failed the live checks: 504 for care, 503 for discounts, and 504 for both unknown snow load and the instruction override. They escalated without drafts. The expected care and discount source IDs were retrieved. Results are saved in `evals/results/rag-20261103T115218132151Z.json`; the 0/4 result is a provider-availability failure, not demonstrated answer quality. A separate SDK metadata request successfully recognized configured `models/gemini-3.8-flash`. No model fallback or `.env` credential/model change was made, and the secret was never inspected or displayed.
+
+### Continue from here
+
+Review the gateway, draft workflow, and tests, then rerun `uv run --env-file .env python -m evals.run_rag` when generation service is available. The runner now exits nonzero on failures. Do not mark RAG answer quality verified until supported drafts and evidence-based abstention actually pass live tests and human inspection. Avoid repetitive retries against an unavailable service.
+
+This remains a developer-only CLI for fictional policy questions: PII redaction, deterministic escalation rules, ticket persistence, full budget accounting, and durable traces are not implemented. Use no real customer data. The grounding checker is another call to the same model, not a correctness guarantee. Await review and explicit commit authorization before the next slice.
+
+## 2026-11-03 17:16:09 IST (+05:30) — Earlier checkpoint: local environment aligned with template
 
 The owner added a Gemini key to `.env` and requested that local runs use it without inspecting the secret. `.env.example` now documents an empty `GEMINI_API_KEY` placeholder and `GEMINI_MODEL=gemini-3.8-flash` alongside the database and embedding settings. Missing embedding settings and `GEMINI_MODEL` were appended to the existing `.env`; all existing values, including the key, were preserved. Only variable names were checked, and no secret values were displayed or inspected. Git confirms `.env` is ignored. Future commands must load `.env`, not use `.env.example` as runtime configuration.
 

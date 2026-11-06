@@ -84,3 +84,29 @@ migrations rather than automatic destructive schema changes.
 Automatic KB watching was discussed as a possible next slice, not implemented.
 The explicit index command already includes new files and removes deleted ones
 when rerun, while preserving the working index if validation or embedding fails.
+
+## 2026-11-03 — First evidence-based policy draft, before ticket automation
+
+The owner requested completing RAG with an answering mechanism and then testing it.
+Use the official Google Gen AI SDK and the model already configured in `.env`.
+No fallback changes the model or spends against another provider automatically.
+The gateway validates structured JSON with Pydantic, bounds requests, exposes usage,
+and sanitizes errors without printing keys or provider request details.
+
+The first generation slice handles fictional policy questions only. It excludes
+internal passages from evidence and abstains on unavailable or customer-specific
+facts. Candidate replies must cite retrieved source IDs with actual quotes, then
+pass a separate grounding call. All drafts still require human review; every failure
+returns an escalation result without exposing the rejected draft. The same model
+acts as generator and checker, so failures can correlate; this is risk reduction,
+not proof of correctness. Independent evals and human review remain necessary.
+
+Each question makes at most two calls, without retries, each capped at 2,048 output
+tokens and a 30-second request timeout. Durable ticket processing, comprehensive PII
+redaction/escalation rules, cost ceilings, and trace persistence are deferred and
+must precede use with real inbound tickets. Live smoke tests use four synthetic
+questions and distinguish service failures from expected abstention. The user's
+mention of “200” was clarified as a typo, not a request for 200 test cases.
+
+References: [Google Gen AI SDK](https://googleapis.github.io/python-genai/)
+and [structured outputs](https://aistudio.google.com/docs/structured-output).

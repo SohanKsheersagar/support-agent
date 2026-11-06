@@ -3,7 +3,7 @@
 A learning project building a customer-support agent for a fictional outdoor retailer.
 The MVP will draft replies for human review and escalate risky cases. It currently
 contains PostgreSQL business data and local KB retrieval using BGE and pgvector.
-It retrieves passages; it does not generate or send replies yet.
+It can draft policy answers from retrieved evidence for human review. It never sends replies.
 
 ## Local setup
 
@@ -32,8 +32,8 @@ the usual PostgreSQL port. Do not use them for a hosted environment.
 
 Keep real credentials in `.env`, which Git ignores. `.env.example` contains only
 sample values and empty secret placeholders. `GEMINI_API_KEY` and `GEMINI_MODEL`
-are reserved for the upcoming generation integration; adding them does not make
-the current retrieval CLI call Gemini.
+configure the generation gateway. Retrieval commands remain local; the RAG draft
+and live eval commands below call Gemini.
 
 ```sh
 docker compose stop db
@@ -134,7 +134,44 @@ TEST_DATABASE_URL=postgresql://trailhaven:trailhaven_local@127.0.0.1:5433/trailh
 This embeds the real KB and verifies expected source IDs for care, discount, and
 shipping questions in isolated schemas. Default tests do not load or download BGE.
 Retrieval currently uses exact vector search; keyword/hybrid ranking, unknown-topic
-handling, and answer generation remain later slices.
+handling at the retrieval layer remain later slices.
+
+## Evidence-based policy drafts
+
+Use only fictional policy questions for this developer CLI. It is not ticket intake
+and does not yet implement PII redaction, the full escalation matrix, ticket storage,
+or action tools. Do not send real customer messages or personal data to it.
+
+```sh
+uv run --env-file .env python -m app.orchestrator.rag "How do I wash my down sleeping bag?"
+```
+
+The command retrieves up to five passages, uses only public evidence for a Gemini
+draft, verifies source IDs and verbatim supporting quotes in code, and makes a second
+Gemini call to check grounding. Every model call goes through `app/gateway/gemini.py`.
+Each call has a 30-second request timeout, no automatic retries, and a 2,048 output-token
+limit. There are at most two generation calls per question. Usage and latency are
+included in successful call metadata; failed calls return only a safe error code.
+
+`human_review` means a proposed draft is available for a person to check. Missing
+evidence, rejected citations, failed grounding, or provider errors return
+`escalate_to_human` with no draft. This is a routing result, not a persisted human
+ticket or a sent customer message. A model check reduces risk but cannot prove
+groundedness; human review remains mandatory. No dollar budget or durable traces
+are implemented in this slice, so use small manual runs on the intended free tier.
+
+Run four fictional live smoke cases (supported care/discount questions, an unknown
+snow-load specification, and an instruction override):
+
+```sh
+uv run --env-file .env python -m evals.run_rag
+```
+
+Reports go to `evals/results/rag-*.json`. These checks cover routing and citations,
+not all factual quality or the full PRD eval targets. Provider errors count as
+failures even when they safely escalate; the command exits nonzero on a failed run.
+Default `uv run pytest` uses simulated
+Gemini responses and makes no paid/network model calls.
 
 Read [buildlog.md](buildlog.md) for the handoff and [docs/decisions.md](docs/decisions.md)
 for design rationale.
